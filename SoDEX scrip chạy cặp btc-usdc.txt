@@ -1,0 +1,120 @@
+(()=>{ // SoDEX BTC/USDC – auto, đơn vị USDC
+  const r=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+  const sleep=ms=>new Promise(res=>setTimeout(res,ms));
+  const log=(...x)=>console.log("[AUTO]",...x);
+  const qAll=s=>Array.from(document.querySelectorAll(s));
+  const findBtn=re=>qAll('button,[role=button],a,[data-testid],[data-qa]').find(e=>re.test((e.textContent||'').trim()));
+
+  async function randomClick(el){
+    if(!el) return false;
+    const rc=el.getBoundingClientRect();
+    const x=rc.left+r(5,Math.max(6,rc.width-5));
+    const y=rc.top +r(5,Math.max(6,rc.height-5));
+    el.dispatchEvent(new MouseEvent('mousemove',{bubbles:true,clientX:x,clientY:y}));
+    el.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,clientX:x,clientY:y}));
+    await sleep(r(60,160));
+    el.dispatchEvent(new MouseEvent('mouseup',{bubbles:true,clientX:x,clientY:y}));
+    if(typeof el.click==='function') el.click();
+    return true;
+  }
+
+  async function goMarket(){
+    const tab=findBtn(/market|thị trường/i);
+    if(tab){await randomClick(tab); await sleep(r(900,1900));}
+  }
+
+  // Ép đơn vị về USDC (dropdown ở ô Total)
+  async function ensureUSDC(){
+    // nếu đã thấy chữ USDC trong khu order panel thì thôi
+    const hasUSDC = qAll('*').some(n => (n.textContent||'').trim()==='USDC');
+    if(hasUSDC) return;
+
+    // mở dropdown (thường đang là BTC)
+    const unitToggler = qAll('button,[role=button],.select,.dropdown')
+      .find(el => /btc/i.test((el.textContent||'').trim()));
+    if(unitToggler){ await randomClick(unitToggler); await sleep(r(400,900)); }
+
+    // chọn USDC trong menu
+    const usdcItem = qAll('*').find(el => (el.textContent||'').trim()==='USDC');
+    if(usdcItem){ await randomClick(usdcItem); await sleep(r(800,1500)); }
+  }
+
+  async function chooseSide(side){
+    const btn=findBtn(new RegExp('^\\s*'+side+'\\b','i'))||findBtn(new RegExp(side,'i'));
+    if(btn){await randomClick(btn); await sleep(r(900,1900));}
+  }
+
+  async function setRandomAmountUSDC(){
+    await ensureUSDC();
+
+    // ưu tiên click % nhanh
+    const picks=['10%','25%','33%','50%','66%','75%','90%','100%'];
+    const label=picks[r(0,picks.length-1)];
+    const node=qAll('*').find(el => (el.textContent||'').trim()===label);
+    if(node){ await randomClick(node); await sleep(r(900,1900)); return label; }
+
+    // fallback: nhập số USDC trực tiếp
+    const amountInputs = qAll('input[type=number],input[placeholder*="Amount" i],input[name*="amount" i]');
+    const inp = amountInputs[0];
+    if(inp){
+      const val=(Math.random()*50+10).toFixed(2); // 10–60 USDC
+      inp.focus(); inp.value='';
+      inp.dispatchEvent(new Event('input',{bubbles:true}));
+      await sleep(r(120,220));
+      inp.value=val;
+      inp.dispatchEvent(new Event('input',{bubbles:true}));
+      await sleep(r(800,1500));
+      return val+' USDC';
+    }
+    return 'N/A';
+  }
+
+  function isDisabled(btn){
+    if(!btn||btn.disabled) return true;
+    const t=(btn.textContent||'').toLowerCase();
+    if(/insufficient|not available|không đủ|disabled/.test(t)) return true;
+    const cs=getComputedStyle(btn);
+    return cs.pointerEvents==='none'||cs.cursor==='not-allowed'||Number(cs.opacity)<0.5;
+  }
+
+  function submitBtnFor(side){
+    const all=qAll('button,[role=button],a');
+    const cand=all.filter(e=>new RegExp(side,'i').test((e.textContent||'').trim()));
+    return cand[cand.length-1]||null;
+  }
+
+  async function placeOne(){
+    try{
+      await goMarket();
+      const side=Math.random()<0.5?'buy':'sell';
+      await chooseSide(side);
+      const amt=await setRandomAmountUSDC();
+      const btn=submitBtnFor(side);
+      if(!btn||isDisabled(btn)){ log('skip',side,amt); return false; }
+      await randomClick(btn);
+      log('order',side.toUpperCase(),amt,new Date().toLocaleTimeString());
+      return true;
+    }catch(e){ console.error(e); return false; }
+  }
+
+  async function runBatch(){
+    const n=r(100,200);
+    log('batch start',n);
+    for(let i=0;i<n;i++){
+      if(window.AUTO_TRADE_STOP) return;
+      await placeOne();
+      await sleep(r(1000,2000)); // 1–2s giữa lệnh
+    }
+    log('batch rest');
+    await sleep(r(60_000,120_000)); // nghỉ 1–2 phút
+  }
+
+  window.AUTO_TRADE_STOP=false;
+  window.addEventListener('keydown',e=>{ if(e.key==='Escape'){ window.AUTO_TRADE_STOP=true; log('stop'); }},true);
+
+  (async function main(){
+    log('start (ESC để dừng)');
+    while(!window.AUTO_TRADE_STOP){ await runBatch(); }
+    log('exit');
+  })();
+})();
