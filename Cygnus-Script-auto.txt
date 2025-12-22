@@ -4,6 +4,7 @@ var CLICK_COUNT = 1000; // Renamed variable
 
 
 
+
 (async function clickLoop(n) {
     const element = document.querySelector('[class*="mt-[10px]"]');
     if (!element) {
@@ -33,6 +34,7 @@ var CLICK_COUNT = 1000; // Renamed variable
         await new Promise(resolve => setTimeout(resolve, delay));
     }
 })(CLICK_COUNT);
+
 
 
 
