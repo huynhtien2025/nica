@@ -2,7 +2,6 @@ var CLICK_COUNT = 1000; // Renamed variable
 \
 var CLICK_COUNT = 1000; // Renamed variable
 Drakonas will be a classic shoot 'em up game build with the Three.js library.  The idea is based on Raptor: Call of the shadows. A classic dos game published by Apogee Software.
-
 (async function clickLoop(n) {
 
     const element = document.querySelector('[class*="mt-[10px]"]');
@@ -33,6 +32,7 @@ Drakonas will be a classic shoot 'em up game build with the Three.js library.  T
         await new Promise(resolve => setTimeout(resolve, delay));
     }
 })(CLICK_COUNT);
+
 
 
 
