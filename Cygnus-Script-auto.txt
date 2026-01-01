@@ -4,6 +4,7 @@ Drakonas will be a classic shoot 'em up game build with the Three.js library.  T
 (async function clickLoop(n) {
 
 
+
     const element = document.querySelector('[class*="mt-[10px]"]');
     if (!element) {
         console.error('Element not found!');
@@ -32,6 +33,7 @@ Drakonas will be a classic shoot 'em up game build with the Three.js library.  T
         await new Promise(resolve => setTimeout(resolve, delay));
     }
 })(CLICK_COUNT);
+
 
 
 
